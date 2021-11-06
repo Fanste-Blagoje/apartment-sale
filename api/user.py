@@ -92,6 +92,24 @@ class UserLoginResource(flask_restful.Resource):
         return user_schema
 
 
+@flask_api.resource('/user/logout')
+class UserLogoutResource(flask_restful.Resource):
+    @staticmethod
+    def post():
+        """
+        Logout user
+        :param:
+        :return:
+        """
+
+        session = models.UserSession.get_by_session_id(session_id=flask.request.headers.get('session_id'))
+
+        if session:
+            session.edit(deleted=True)
+
+        return EMPTY_RESPONSE
+
+
 @flask_api.resource('/user/session')
 class StaffUserSessionResource(flask_restful.Resource):
     @staticmethod
