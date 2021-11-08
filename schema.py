@@ -72,6 +72,7 @@ class ApartmentFilterRequestSchema(ma.Schema):
     balconies = marshmallow.fields.Int()
     price = marshmallow.fields.Int()
     status = marshmallow.fields.Str()
+    photo = marshmallow.fields.Str()
 
 
 class ContractOptionalRequestSchema(ma.Schema):
