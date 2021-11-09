@@ -62,6 +62,7 @@ class ApartmentRequestSchema(ma.Schema):
     orientation = marshmallow.fields.Str()
     balconies = marshmallow.fields.Int()
     status = marshmallow.fields.Str()
+    photo = marshmallow.fields.Str()
 
 
 class ApartmentFilterRequestSchema(ma.Schema):
