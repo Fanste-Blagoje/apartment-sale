@@ -106,25 +106,18 @@ class Apartment(db.Model, BaseModel):
 
         if lamella:
             apartments = apartments.filter(cls.lamella == lamella)
-
         if square_footage:
             apartments = apartments.filter(cls.square_footage == square_footage)
-
         if floor:
             apartments = apartments.filter(cls.floor == floor)
-
         if orientation:
             apartments = apartments.filter(cls.orientation == orientation)
-
         if rooms:
             apartments = apartments.filter(cls.rooms == rooms)
-
         if balconies:
             apartments = apartments.filter(cls.balconies == balconies)
-
         if price:
             apartments = apartments.filter(cls.price >= price)
-
         if status:
             apartments = apartments.filter(cls.status == status)
 
@@ -181,9 +174,31 @@ class Contract(db.Model, BaseModel):
         return cls.query.filter(cls.contract_number == contract_number, ~cls.deleted).first()
 
     @classmethod
-    def get_apartments_by_customer(cls, customer_id):
-        return cls.query.filter(cls.customer_id == customer_id, ~cls.deleted).all()
+    def get_apartments_by_customer(cls, customer_id, price, contract_number, first_visit):
+        apartments = cls.query.filter(cls.customer_id == customer_id, ~cls.deleted)
+
+        if price:
+            apartments = apartments.filter(cls.price == price)
+        if contract_number:
+            apartments = apartments.filter(cls.contract_number == contract_number)
+        if first_visit:
+            apartments = apartments.filter(cls.first_visit == first_visit)
+
+        return apartments.all()
 
     @classmethod
-    def get_customers_by_apartment(cls, apartment_id):
-        return cls.query.filter(cls.apartment_id == apartment_id, ~cls.deleted).all()
+    def get_customers_by_apartment(cls, apartment_id, price, contract_number, first_visit):
+        customers = cls.query.filter(cls.apartment_id == apartment_id, ~cls.deleted)
+
+        if price:
+            customers = customers.filter(cls.price == price)
+        if contract_number:
+            customers = customers.filter(cls.contract_number == contract_number)
+        if first_visit:
+            customers = customers.filter(cls.first_visit == first_visit)
+
+        return customers.all()
+
+    @classmethod
+    def get_by_customer_and_apartment(cls, customer_id, apartment_id):
+        return cls.query.filter(cls.customer_id == customer_id, cls.apartment_id == apartment_id, ~cls.deleted).first()

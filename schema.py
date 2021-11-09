@@ -32,6 +32,7 @@ class UserEditRequestSchema(ma.Schema):
     first_name = marshmallow.fields.Str()
     last_name = marshmallow.fields.Str()
     role = marshmallow.fields.Str()
+    password_confirm = marshmallow.fields.Str()
 
 
 class CustomerRequestSchema(ma.Schema):
@@ -86,16 +87,8 @@ class ContractOptionalRequestSchema(ma.Schema):
     approved = marshmallow.fields.Bool()
     signed = marshmallow.fields.Bool()
     note = marshmallow.fields.Str()
-
-
-class ContractEditRequestSchema(ContractOptionalRequestSchema):
     contract_number = marshmallow.fields.Str()
     price = marshmallow.fields.Int()
-
-
-class ContractRequiredRequestSchema(ContractOptionalRequestSchema):
-    contract_number = marshmallow.fields.Str(required=True)
-    price = marshmallow.fields.Int(required=True)
 
 
 ####################
@@ -131,3 +124,4 @@ class ContractSchema(ma.SQLAlchemyAutoSchema):
     customer = ma.Nested(CustomerSchema)
     payment_method = EnumField(models.user.PaymentMethodEnum)
     status = EnumField(models.user.CustomerApartmentStatusEnum)
+    apartment = ma.Nested(ApartmentSchema)

@@ -100,7 +100,16 @@ class CustomerApartmentResource(flask_restful.Resource):
         :param customer_id:
         :return:
         """
-        return schema.ContractSchema(many=True).dump(models.Contract.get_apartments_by_customer(customer_id=customer_id))
+        validated_data = schema.ContractOptionalRequestSchema().load(flask.request.args or {})
+
+        apartments = models.Contract.get_apartments_by_customer(
+            customer_id=customer_id,
+            price=validated_data.get('price'),
+            contract_number=validated_data.get('contract_number'),
+            first_visit=validated_data.get('first_visit')
+        )
+
+        return schema.ContractSchema(many=True).dump(apartments)
 
 
 @flask_api.resource('/apartment/<int:apartment_id>/customer')
@@ -113,4 +122,13 @@ class ApartmentCustomerResource(flask_restful.Resource):
         :param apartment_id:
         :return:
         """
-        return schema.ContractSchema(many=True).dump(models.Contract.get_customers_by_apartment(apartment_id=apartment_id))
+        validated_data = schema.ContractOptionalRequestSchema().load(flask.request.args or {})
+
+        customers = models.Contract.get_customers_by_apartment(
+            apartment_id=apartment_id,
+            price=validated_data.get('price'),
+            contract_number=validated_data.get('contract_number'),
+            first_visit=validated_data.get('first_visit')
+        )
+
+        return schema.ContractSchema(many=True).dump(customers)

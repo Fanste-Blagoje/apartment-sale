@@ -7,6 +7,8 @@ import schema
 from datetime import date, timedelta, datetime
 import errors
 from utils import general, decorators
+from docx import Document
+import time
 
 
 @flask_api.resource('/customer', '/customer/<int:customer_id>')
@@ -96,30 +98,45 @@ class ContractResource(flask_restful.Resource):
             )
 
     @staticmethod
-    @decorators.check_session_role(models.UserRoleEnum.finance, check_role=True, return_user=True)
+    @decorators.check_session_role(return_user=True)
     def post(current_user, customer_id, apartment_id):
         """
         Create new contract by given data
         :params current_user, customer_id, apartment_id:
         :return:
         """
-        validated_data = schema.ContractRequiredRequestSchema().load(flask.request.json or {})
+        validated_data = schema.ContractOptionalRequestSchema().load(flask.request.json or {})
 
         validated_data['user_id'] = current_user.id
         validated_data['customer_id'] = customer_id
         validated_data['apartment_id'] = apartment_id
 
-        contract = models.Contract.get_by_contract_number(contract_number=validated_data['contract_number'])
+        apartment = general.get_object_by_id(
+            obj_id=apartment_id,
+            query_model=models.Apartment,
+            error=errors.ERR_BAD_APARTMENT_ID
+        )
+
+        contract = models.Contract.get_by_customer_and_apartment(customer_id=customer_id, apartment_id=apartment_id)
 
         if contract:
             flask_restful.abort(400, error=errors.ERR_CONTRACT_ALREADY_EXISTS)
+
+        if apartment.status.name in ['sold', 'reserved']:
+            flask_restful.abort(400, error=errors.ERR_APARTMENT_NOT_AVAILABLE)
+
+        validated_data['price'] = apartment.price
+        validated_data['contract_number'] = '{}'.format(str(time.time()).split('.')[0])
+
+        if validated_data.get('approved') is True and current_user.role.name != 'finance':
+            flask_restful.abort(400, error=errors.ERR_BAD_ROLE_FOR_APPROVING)
 
         contract = models.Contract.create(**validated_data)
 
         return schema.ContractSchema(many=False).dump(contract)
 
     @staticmethod
-    @decorators.check_session_role(models.UserRoleEnum.finance, check_role=True, return_user=True)
+    @decorators.check_session_role(return_user=True)
     def patch(current_user, customer_id, apartment_id, contract_id):
         """
         Edit contract for given contract id
@@ -129,11 +146,22 @@ class ContractResource(flask_restful.Resource):
         :param contract_id:
         :return:
         """
-        validated_data = schema.ContractEditRequestSchema().load(flask.request.json or {})
+        validated_data = schema.ContractOptionalRequestSchema().load(flask.request.json or {})
 
         validated_data['user_id'] = current_user.id
         validated_data['customer_id'] = customer_id
         validated_data['apartment_id'] = apartment_id
+
+        contract = models.Contract.get_by_contract_number(contract_number=validated_data.get('contract_number'))
+
+        if contract:
+            flask_restful.abort(400, error=errors.ERR_CONTRACT_ALREADY_EXISTS)
+
+        apartment = general.get_object_by_id(
+            obj_id=apartment_id,
+            query_model=models.Apartment,
+            error=errors.ERR_BAD_APARTMENT_ID
+        )
 
         contract = general.get_object_by_id(
             obj_id=contract_id,
@@ -144,6 +172,14 @@ class ContractResource(flask_restful.Resource):
         contract.edit(price=validated_data.get('price'),
                       status=validated_data.get('status'),
                       note=validated_data.get('note'))
+
+        if current_user.role.name == 'finance' and validated_data.get('approved'):
+            contract.edit(approved_by=current_user.id, approved=True)
+        elif current_user.role.name != 'finance' and validated_data.get('approved'):
+            flask_restful.abort(400, error=errors.ERR_BAD_ROLE_FOR_APPROVING)
+
+        if apartment.price != contract.price and not contract.approved:
+            flask_restful.abort(400, error=errors.ERR_PRICE_NOT_APPROVED)
 
         return schema.ContractSchema(many=False).dump(contract)
 

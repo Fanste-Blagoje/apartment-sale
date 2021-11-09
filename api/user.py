@@ -180,6 +180,9 @@ class UserResource(flask_restful.Resource):
         if current_user.role in [user_roles.finance, user_roles.salesman] and current_user.id != user_id:
             flask_restful.abort(400, error=errors.ERR_USER_CANT_EDIT)
 
+        if validated_data.get('password') != validated_data.get('password_confirm'):
+            flask_restful.abort(400, error=errors.ERR_BAD_PASSWORD_CONFIRMATION)
+
         user.edit(**validated_data)
 
         return schema.UserSchema(many=False).dump(user)
