@@ -9,6 +9,7 @@ import errors
 from utils import general, decorators
 from docx import Document
 import time
+from flask import current_app
 
 
 @flask_api.resource('/customer', '/customer/<int:customer_id>')
@@ -157,12 +158,6 @@ class ContractResource(flask_restful.Resource):
         if contract:
             flask_restful.abort(400, error=errors.ERR_CONTRACT_ALREADY_EXISTS)
 
-        apartment = general.get_object_by_id(
-            obj_id=apartment_id,
-            query_model=models.Apartment,
-            error=errors.ERR_BAD_APARTMENT_ID
-        )
-
         contract = general.get_object_by_id(
             obj_id=contract_id,
             query_model=models.Contract,
@@ -178,8 +173,44 @@ class ContractResource(flask_restful.Resource):
         elif current_user.role.name != 'finance' and validated_data.get('approved'):
             flask_restful.abort(400, error=errors.ERR_BAD_ROLE_FOR_APPROVING)
 
-        if apartment.price != contract.price and not contract.approved:
+        if contract.apartment.price != contract.price and not contract.approved:
             flask_restful.abort(400, error=errors.ERR_PRICE_NOT_APPROVED)
+
+        if contract.status == 'reserved' or validated_data.get('status') == 'reserved':
+            contract.apartment.edit(status='reserved')
+
+            # Create word template
+            file_name = 'Ugovor o kupoprodaji br. {}{}'.format(contract.id, '.docx')
+            path = '{}{}'.format(current_app.config.get('CONTRACT_PATH'), file_name)
+            document = Document()
+            # section = document.sections[0]
+            # header = section.header
+            # p = header.paragraphs[0]
+            # p.text = '\tUGOVOR O KUPOPRODAJI NEPOKRETNOSTI\t'
+            document.add_heading('\tUGOVOR O KUPOPRODAJI NEPOKRETNOSTI\t', level=1)
+            p = document.add_paragraph(' zaključen dana {} godine, između ugovornih strana:'
+                                       .format(contract.date_of_update.strftime('%d.%m.%Y'))
+                                       )
+            # Adding user salesman credentials
+            p = document.add_paragraph('1.{} kao prodavca'.format(f'{contract.user.first_name} {contract.user.last_name}'))
+
+            # Adding customer credentials
+            p = document.add_paragraph('2.{} , ul. {}, kao kupca, sa druge strane'.format(contract.customer.name, contract.customer.address))
+
+            # p.text = '\tUGOVORNE STRANE SU SE SPORAZUMELE O SLEDEĆEM:\t'
+            document.add_heading('\tUGOVORNE STRANE SU SE SPORAZUMELE O SLEDEĆEM:\t', level=3)
+
+            p = document.add_paragraph('Prodavac prodaje, a kupac kupuje stan br. {} po medjusobno ugovorenoj ceni od {} $.'
+                                       .format(contract.apartment.id, contract.price))
+
+            if validated_data.get('signed'):
+                contract.apartment.edit(status='sold')
+                contract.edit(status='purchased')
+
+                # Add contract details
+                p.add_run(' Način placanja: {}, na osnovu ugovora pod brojem {}'.format(contract.payment_method.name, contract.contract_number))
+
+            document.save(path)
 
         return schema.ContractSchema(many=False).dump(contract)
 

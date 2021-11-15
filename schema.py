@@ -125,4 +125,4 @@ class ContractSchema(ma.SQLAlchemyAutoSchema):
     customer = ma.Nested(CustomerSchema)
     payment_method = EnumField(models.user.PaymentMethodEnum)
     status = EnumField(models.user.CustomerApartmentStatusEnum)
-    apartment = ma.Nested(ApartmentSchema)
+    apartment = ma.Nested(ApartmentSchema, exclude=['photo'])
