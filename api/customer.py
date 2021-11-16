@@ -22,10 +22,17 @@ class CustomerResource(flask_restful.Resource):
         :param customer_id:
         :return:
         """
+        validated_data = schema.CustomerEditRequestSchema().load(flask.request.args or {})
+
+        customer = models.Customer.get_by_filters(
+            customer_id=validated_data.get('id'),
+            customer_type=validated_data.get('type')
+        )
+
         if customer_id:
             return schema.CustomerSchema(many=False).dump(models.Customer.get_by_id(customer_id))
 
-        return schema.CustomerSchema(many=True).dump(models.Customer.get_all())
+        return schema.CustomerSchema(many=True).dump(customer)
 
     @staticmethod
     @decorators.check_session_role()
@@ -123,6 +130,14 @@ class ContractResource(flask_restful.Resource):
         if contract:
             flask_restful.abort(400, error=errors.ERR_CONTRACT_ALREADY_EXISTS)
 
+        # Get sold apartments by contracts
+        contract_issued = models.Contract.get_issued_by_apartment(
+            apartment_id=apartment_id
+        )
+
+        if contract_issued:
+            flask_restful.abort(400, error=errors.ERR_APARTMENT_NOT_AVAILABLE)
+
         if apartment.status.name in ['sold', 'reserved']:
             flask_restful.abort(400, error=errors.ERR_APARTMENT_NOT_AVAILABLE)
 
@@ -178,6 +193,16 @@ class ContractResource(flask_restful.Resource):
 
         if contract.status == 'reserved' or validated_data.get('status') == 'reserved':
             contract.apartment.edit(status='reserved')
+
+            # Get all non customer contracts by apartment
+            contracts = models.Contract.get_all_non_customer_by_apartment(
+                apartment_id=apartment_id,
+                customer_id=customer_id
+            )
+
+            # Delete all non customer apartment contracts
+            for contract in contracts:
+                contract.deleted = True
 
             # Create word template
             file_name = 'Ugovor o kupoprodaji br. {}{}'.format(contract.id, '.docx')

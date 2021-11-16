@@ -1,3 +1,4 @@
+import models
 from core import db
 from datetime import datetime, date, timedelta
 from models.base_model import BaseModel
@@ -62,6 +63,17 @@ class User(db.Model, BaseModel):
     def get_by_username(cls, username):
         return cls.query.filter(cls.username == username, ~cls.deleted).first()
 
+    @classmethod
+    def get_by_filters(cls, user_id, role):
+        users = cls.query.filter(~cls.deleted)
+
+        if user_id:
+            users = users.filter(cls.id == user_id)
+        if role:
+            users = users.filter(cls.role == role)
+
+        return users.all()
+
 
 class UserSession(db.Model, BaseModel):
     """
@@ -123,6 +135,33 @@ class Apartment(db.Model, BaseModel):
 
         return apartments.all()
 
+    ##################
+    # REPORT METHODS #
+    ##################
+    @classmethod
+    def get_by_status_and_date_period(cls, start_date, end_date):
+        apartments = cls.query.filter(~cls.deleted)
+
+        if start_date:
+            apartments = apartments.filter(cls.date_of_creation >= start_date)
+        if end_date:
+            apartments = apartments.filter(cls.date_of_creation <= end_date)
+
+        return apartments.filter(cls.status == 'reserved').all(), \
+               apartments.filter(cls.status == 'sold').all(), \
+               apartments.filter(cls.status == 'available').all()
+
+    @classmethod
+    def get_potential_apartments_by_customer(cls, customer_id):
+        return cls.query.join(models.Contract, models.Contract.apartment_id == cls.id)\
+            .filter(
+                cls.status == 'available',
+                models.Contract.customer_id == customer_id,
+                models.Contract.status == 'potential',
+                ~cls.deleted,
+                ~models.Contract.deleted
+            )
+
 
 class Customer(db.Model, BaseModel):
     """Model for customer"""
@@ -136,6 +175,17 @@ class Customer(db.Model, BaseModel):
     address = db.Column(db.String(50))
 
     contracts = db.relationship('Contract', back_populates='customer')
+
+    @classmethod
+    def get_by_filters(cls, customer_id, customer_type):
+        customers = cls.query.filter(~cls.deleted)
+
+        if customer_id:
+            customers = customers.filter(cls.id == customer_id)
+        if customer_type:
+            customers = customers.filter(cls.type == customer_type)
+
+        return customers.all()
 
 
 class Contract(db.Model, BaseModel):
@@ -202,3 +252,43 @@ class Contract(db.Model, BaseModel):
     @classmethod
     def get_by_customer_and_apartment(cls, customer_id, apartment_id):
         return cls.query.filter(cls.customer_id == customer_id, cls.apartment_id == apartment_id, ~cls.deleted).first()
+
+    @classmethod
+    def get_issued_by_apartment(cls, apartment_id):
+        return cls.query.filter(cls.apartment_id == apartment_id, cls.status != 'potential', ~cls.deleted).all()
+
+    @classmethod
+    def get_all_non_customer_by_apartment(cls, apartment_id, customer_id):
+        return cls.query.filter(cls.apartment_id == apartment_id, cls.customer_id != customer_id, ~cls.deleted).all()
+
+    ##################
+    # REPORT METHODS #
+    ##################
+
+    @classmethod
+    def get_purchased_apartments(cls, start_date, end_date):
+        apartments = cls.query.join(models.Apartment, models.Apartment.id == cls.apartment_id)\
+            .filter(cls.status == 'purchased', ~cls.deleted)
+
+        if start_date:
+            apartments = apartments.filter(cls.date_of_update >= start_date)
+        if end_date:
+            apartments = apartments.filter(cls.date_of_update <= end_date)
+
+        return apartments.all()
+
+    @classmethod
+    def get_purchases_by_customer(cls, customer_id, start_date, end_date):
+        contracts = cls.query.filter(
+            cls.status == 'purchased',
+            ~cls.deleted
+        )
+
+        if customer_id:
+            contracts = contracts.filter(cls.customer_id == customer_id)
+        if start_date:
+            contracts = contracts.filter(cls.date_of_update >= start_date)
+        if end_date:
+            contracts = contracts.filter(cls.date_of_update <= end_date)
+
+        return contracts.all()

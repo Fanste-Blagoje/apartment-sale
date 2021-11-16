@@ -8,6 +8,11 @@ from marshmallow_enum import EnumField
 ####################
 # REQUEST SCHEMAS #
 ####################
+class StartEndDateRequestSchema(ma.Schema):
+    start_date = marshmallow.fields.Str()
+    end_date = marshmallow.fields.Str()
+
+
 class UserLoginRequestSchema(ma.Schema):
     username = marshmallow.fields.Str(required=True)
     password = marshmallow.fields.Str(required=True)
@@ -33,6 +38,7 @@ class UserEditRequestSchema(ma.Schema):
     last_name = marshmallow.fields.Str()
     role = marshmallow.fields.Str()
     password_confirm = marshmallow.fields.Str()
+    id = marshmallow.fields.Int()
 
 
 class CustomerRequestSchema(ma.Schema):
@@ -51,6 +57,7 @@ class CustomerEditRequestSchema(ma.Schema):
     phone = marshmallow.fields.Str()
     pib_jmbg = marshmallow.fields.Str()
     address = marshmallow.fields.Str()
+    id = marshmallow.fields.Int()
 
 
 class ApartmentRequestSchema(ma.Schema):
@@ -77,7 +84,7 @@ class ApartmentFilterRequestSchema(ma.Schema):
     photo = marshmallow.fields.Str()
 
 
-class ContractOptionalRequestSchema(ma.Schema):
+class ContractOptionalRequestSchema(StartEndDateRequestSchema):
     apartment_id = marshmallow.fields.Int()
     user_id = marshmallow.fields.Int()
     customer_id = marshmallow.fields.Int()

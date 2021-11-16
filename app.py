@@ -1,4 +1,4 @@
-from api import user, customer, apartment
+from api import user, customer, apartment, reports
 import flask
 from core import db, create_app as create_flask_app
 from flask_migrate import Migrate, MigrateCommand

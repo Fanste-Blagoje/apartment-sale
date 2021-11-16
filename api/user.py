@@ -136,10 +136,17 @@ class UserResource(flask_restful.Resource):
         :param user_id:
         :return:
         """
+        validated_data = schema.UserEditRequestSchema().load(flask.request.args or {})
+
+        users = models.User.get_by_filters(
+            user_id=validated_data.get('id'),
+            role=validated_data.get('role')
+        )
+
         if user_id:
             return schema.UserSchema(many=False).dump(models.User.get_by_id(user_id))
 
-        return schema.UserSchema(many=True).dump(models.User.get_all())
+        return schema.UserSchema(many=True).dump(users)
 
     @staticmethod
     @decorators.check_session_role(models.UserRoleEnum.admin, check_role=True)

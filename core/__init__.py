@@ -40,37 +40,4 @@ def create_app(config_path, name=__name__):
     # Init App
     flask_api.init_app(app)
 
-    # Configure logs
-    # _configure_log(app)
-
-    # @app.before_request
-    # # Ask Uros for this
-    # def before_request():
-    #     if request.method == 'OPTIONS' or '/static/' in request.path or "/apple-app-site-association" in request.path:
-    #         return
-    #
-    #     if request.method != 'GET':
-    #         current_app.logger.info("[REQUEST - {}] - URL: {}, arguments: {}, json: {}".format(
-    #             request.method, request.base_url, request.values, request.json))
-    #
-    # @app.after_request
-    # def after_request(response):
-    #     db.session.commit()
-    #     if request.method != 'GET':
-    #         current_app.logger.info("[RESPONSE] - URL: {}, response: {}".format(request.base_url, response.get_data()))
-    #     return response
-
     return app
-
-
-# Ask Uros for this
-# def _configure_log(app):
-#     rotation_handler = RotatingFileHandler(
-#         app.config.get("LOG_PATH"), backupCount=app.config.get("LOG_COUNT"),
-#         maxBytes=app.config.get("LOG_MAX_SIZE"), encoding=app.config.get("LOG_ENCODING"))
-#     rotation_handler.setLevel(app.config.get("LOG_LEVEL"))
-#     formatter = logging.Formatter(
-#         "[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s")
-#     rotation_handler.setFormatter(formatter)
-#     app.logger.addHandler(rotation_handler)
-#     app.logger.setLevel(app.config.get("LOG_LEVEL"))
