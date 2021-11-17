@@ -6,7 +6,6 @@ import flask_restful
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declared_attr
-from models import utils
 
 
 class NotSQLAlchemyObjectError(Exception):

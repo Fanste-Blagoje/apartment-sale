@@ -1,11 +1,9 @@
 __author__ = "Stefan"
 
-from flask import Flask,  request, current_app
+from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 from flask_marshmallow import Marshmallow
-import logging
-from logging.handlers import RotatingFileHandler
 from flask_sqlalchemy import SQLAlchemy as FlaskSQLAlchemy
 
 cors = CORS(reseources={r"/public/*": {"origins": "*"}})

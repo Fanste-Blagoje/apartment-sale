@@ -4,8 +4,6 @@ import flask
 import flask_restful
 import models
 import schema
-import base64
-import json
 from datetime import date, timedelta, datetime
 import errors
 from utils import general, decorators
