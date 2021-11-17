@@ -11,6 +11,14 @@ import errors
 from utils import general, decorators
 
 
+def _password_confirmation(validated_data):
+    """Method used for password confirmation"""
+    if validated_data.get('password') != validated_data.get('password_confirm'):
+        flask_restful.abort(400, error=errors.ERR_BAD_PASSWORD_CONFIRMATION)
+
+    return True
+
+
 @flask_api.resource('/user/import')
 class UserImportLogin(flask_restful.Resource):
     @staticmethod
@@ -40,12 +48,10 @@ class UserRegisterResource(flask_restful.Resource):
         if user:
             flask_restful.abort(400, error=errors.ERR_USERNAME_ALREADY_EXISTS)
 
-        if validated_data['password'] != validated_data['password_confirm']:
-            flask_restful.abort(400, error=errors.ERR_BAD_PASSWORD_CONFIRMATION)
+        # Test if password equal password confirm
+        _password_confirmation(validated_data=validated_data)
 
         user = models.User.create(**validated_data)
-
-        user.edit(password=general.generate_password(user=user))
 
         return schema.UserSchema(many=False).dump(user)
 
@@ -63,21 +69,6 @@ class UserLoginResource(flask_restful.Resource):
 
         if not user:
             flask_restful.abort(400, error=errors.ERR_BAD_CREDENTIALS)
-
-        if user:
-            try:
-                # Decode location object
-                location = json.loads(base64.b64decode(validated_data.get('location')).decode('latin1'))
-
-                # Check timeStamp validity, need to be between current time + 1 and -1
-                start_timestamp = datetime.timestamp(datetime.today() - timedelta(minutes=1))
-                end_timestamp = datetime.timestamp(datetime.today() + timedelta(minutes=1))
-                location_timestamp = location.get('timeStamp')
-
-                if start_timestamp < location_timestamp or location_timestamp < end_timestamp:
-                    flask_restful.abort(400, error=errors.ERR_TOKEN_EXPIRED)
-            except Exception as e:
-                print('ERROR', e)
 
         user_schema = schema.UserSchema(many=False).dump(user)
 
@@ -129,22 +120,31 @@ class StaffUserSessionResource(flask_restful.Resource):
 @flask_api.resource('/user', '/user/<int:user_id>')
 class UserResource(flask_restful.Resource):
     @staticmethod
-    @decorators.check_session_role()
-    def get(user_id=None):
+    @decorators.check_session_role(return_user=True)
+    def get(current_user, user_id=None):
         """
         Get user by id or all users
-        :param user_id:
+        :params user_id, current_user:
         :return:
         """
-        validated_data = schema.UserEditRequestSchema().load(flask.request.args or {})
+        user_roles = models.UserRoleEnum
 
-        users = models.User.get_by_filters(
-            user_id=validated_data.get('id'),
-            role=validated_data.get('role')
-        )
+        if current_user.role == user_roles.admin:
+
+            validated_data = schema.UserEditRequestSchema().load(flask.request.args or {})
+
+            users = models.User.get_by_filters(
+                user_id=validated_data.get('id'),
+                role=validated_data.get('role')
+            )
+        else:
+            users = list()
 
         if user_id:
-            return schema.UserSchema(many=False).dump(models.User.get_by_id(user_id))
+            if current_user.role in [user_roles.finance, user_roles.salesman] and current_user.id != user_id:
+                flask_restful.abort(400, error=errors.ERR_NOT_VISIBLE_FOR_ROLE)
+            else:
+                return schema.UserSchema(many=False).dump(models.User.get_by_id(user_id))
 
         return schema.UserSchema(many=True).dump(users)
 
@@ -156,6 +156,8 @@ class UserResource(flask_restful.Resource):
         :return:
         """
         validated_data = schema.UserRequiredRequestSchema().load(flask.request.json or {})
+
+        _password_confirmation(validated_data=validated_data)
 
         # Create user
         user = models.User.create(**validated_data)
@@ -187,8 +189,7 @@ class UserResource(flask_restful.Resource):
         if current_user.role in [user_roles.finance, user_roles.salesman] and current_user.id != user_id:
             flask_restful.abort(400, error=errors.ERR_USER_CANT_EDIT)
 
-        if validated_data.get('password') != validated_data.get('password_confirm'):
-            flask_restful.abort(400, error=errors.ERR_BAD_PASSWORD_CONFIRMATION)
+        _password_confirmation(validated_data=validated_data)
 
         user.edit(**validated_data)
 

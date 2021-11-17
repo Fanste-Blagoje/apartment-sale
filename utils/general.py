@@ -30,17 +30,6 @@ def generate_session_id(user):
     return hashlib.sha512("{}/{}".format(user.id, datetime.utcnow()).encode("UTF-8")).hexdigest()
 
 
-def generate_token(user, token_length=20):
-    """
-
-    :param user:
-    :param token_length:
-    :return:
-    """
-    return hashlib.sha512("{}/{}/{}".format(user.first_name, user.last_name, datetime.utcnow())
-                          .encode("UTF-8")).hexdigest()[:token_length]
-
-
 def generate_and_update_user_session_key(user):
     import hashlib
 
@@ -49,12 +38,3 @@ def generate_and_update_user_session_key(user):
     session_key = "{}:{}:{}".format("sess", user.id, user_session_key)
 
     return session_key
-
-
-def generate_password(user):
-    """
-
-    :param user:
-    :return:
-    """
-    return hashlib.sha512("{}".format(user.password).encode('UTF-8')).hexdigest()

@@ -16,7 +16,6 @@ class StartEndDateRequestSchema(ma.Schema):
 class UserLoginRequestSchema(ma.Schema):
     username = marshmallow.fields.Str(required=True)
     password = marshmallow.fields.Str(required=True)
-    location = marshmallow.fields.Str()
 
 
 class UserPasswordConfirmSchema(UserLoginRequestSchema):
@@ -29,6 +28,7 @@ class UserRequiredRequestSchema(UserLoginRequestSchema):
     first_name = marshmallow.fields.Str(required=True)
     last_name = marshmallow.fields.Str(required=True)
     role = marshmallow.fields.Str(required=True)
+    password_confirm = marshmallow.fields.Str(required=True)
 
 
 class UserEditRequestSchema(ma.Schema):
@@ -105,6 +105,7 @@ class ContractOptionalRequestSchema(StartEndDateRequestSchema):
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = models.User
+        exclude = ['password']
 
     role = EnumField(models.user.UserRoleEnum)
 

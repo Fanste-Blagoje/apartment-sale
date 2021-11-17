@@ -94,7 +94,7 @@ class ContractResource(flask_restful.Resource):
     @decorators.check_session_role()
     def get(customer_id, apartment_id, contract_id):
         """
-        Get contract by
+        Get contract by given data
         :params contract_id, apartment_id, customer_id:
         :return:
         """
@@ -201,8 +201,8 @@ class ContractResource(flask_restful.Resource):
             )
 
             # Delete all non customer apartment contracts
-            for contract in contracts:
-                contract.deleted = True
+            for agreement in contracts:
+                agreement.edit(deleted=True)
 
             # Create word template
             file_name = 'Ugovor o kupoprodaji br. {}{}'.format(contract.id, '.docx')
@@ -230,7 +230,7 @@ class ContractResource(flask_restful.Resource):
 
             if validated_data.get('signed'):
                 contract.apartment.edit(status='sold')
-                contract.edit(status='purchased')
+                contract.edit(status='purchased', signed=True)
 
                 # Add contract details
                 p.add_run(' Način placanja: {}, na osnovu ugovora pod brojem {}'.format(contract.payment_method.name, contract.contract_number))
