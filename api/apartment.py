@@ -74,7 +74,8 @@ class ApartmentResource(flask_restful.Resource):
         # Edit price in every contract with apartment
         if validated_data.get('price'):
             for contract in apartment.contracts:
-                contract.edit(price=validated_data.get('price'))
+                if not contract.deleted:
+                    contract.edit(price=validated_data.get('price'))
 
         if validated_data.get('status'):
             flask_restful.abort(400, error=errors.ERR_NOT_EDITABLE)
