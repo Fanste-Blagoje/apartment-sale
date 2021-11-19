@@ -72,7 +72,7 @@ class User(db.Model, BaseModel):
         if role:
             users = users.filter(cls.role == role)
 
-        return users.all()
+        return users.order_by(cls.date_of_creation.desc()).all()
 
 
 class UserSession(db.Model, BaseModel):
@@ -133,7 +133,7 @@ class Apartment(db.Model, BaseModel):
         if status:
             apartments = apartments.filter(cls.status == status)
 
-        return apartments.all()
+        return apartments.order_by(cls.date_of_creation.desc()).all()
 
     ##################
     # REPORT METHODS #
@@ -185,7 +185,7 @@ class Customer(db.Model, BaseModel):
         if customer_type:
             customers = customers.filter(cls.type == customer_type)
 
-        return customers.all()
+        return customers.order_by(cls.date_of_creation.desc()).all()
 
 
 class Contract(db.Model, BaseModel):
@@ -234,7 +234,7 @@ class Contract(db.Model, BaseModel):
         if first_visit:
             apartments = apartments.filter(cls.first_visit == first_visit)
 
-        return apartments.all()
+        return apartments.order_by(cls.date_of_creation.desc()).all()
 
     @classmethod
     def get_customers_by_apartment(cls, apartment_id, price, contract_number, first_visit):
@@ -247,7 +247,7 @@ class Contract(db.Model, BaseModel):
         if first_visit:
             customers = customers.filter(cls.first_visit == first_visit)
 
-        return customers.all()
+        return customers.order_by(cls.date_of_creation.desc()).all()
 
     @classmethod
     def get_by_customer_and_apartment(cls, customer_id, apartment_id):
